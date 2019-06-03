@@ -16,7 +16,11 @@ def getsite_enu(filename):
             enu[0].append(float(temp[2]))
             enu[1].append(float(temp[3]))
             enu[2].append(float(temp[4]))
-            time.append(float(temp[1]))
+            if (temp[1].find(":") == -1):
+                time.append(float(temp[1]))
+            else:
+                h,m,s = temp[1].split(":")
+                time.append(float(h)*3600.0+float(m)*60.0+float(s))
             if (temp[5] == "FLOAT"):
                 flag.append(0)
             else:
@@ -34,10 +38,11 @@ def draw_enu(time,enu,ylabel,color,marker,size):
     plt.grid()
     plt.legend(loc="upper right")
 
-def draw_trace(x,y,color,marker):
+def draw_trace(x,y,color,marker,begin_end = False):
     plt.plot(x,y,color=color,marker=marker,lw=0,ms=1.5)
-    plt.plot(x[0],y[0],"r*",ms=10)
-    plt.plot(x[-1],y[-1],"b*",ms=10)
+    if (begin_end):
+        plt.plot(x[0],y[0],"r*",ms=10)
+        plt.plot(x[-1],y[-1],"b*",ms=10)
     plt.ylabel("N(m)")
     plt.xlabel("E(m)")
     plt.grid()
@@ -80,7 +85,11 @@ def draw_enu_3part(time,enu,ylabel,color,marker,size):
 def draw_main():
 
     ###get all data
-    time,enu,flag = getsite_enu(file_input)
+    time,enu_raw,flag = getsite_enu(file_input)
+    enu= []
+    for j in range(3):
+        enu.append([enu_raw[j][i]-ref_pos[j] for i in range(len(enu_raw[j]))])
+
     enu_fix = [[] ,[] ,[]]
     time_fix = []
     # get fix
@@ -112,14 +121,14 @@ def draw_main():
     # draw three part
     plt.figure(figsize=(12,6),dpi=120)
     draw_enu_3part(time_fix,enu_fix,"difference [m]",'g',".",1.5)
-    draw_enu_3part(time_float,enu_float,"difference [m]","#FF4040",".",1.5)
+    draw_enu_3part(time_float,enu_float,"difference [m]","#FFB90F",".",1.5)
     plt.xlabel("Time(epochs)",fontsize=13)
     plt.savefig("enu_fix.png",dpi=120)
 
     # draw trace
     plt.figure(figsize=(12,6),dpi=120)
-    draw_trace(enu_fix[0],enu_fix[1],"g",".")
-    draw_trace(enu_float[0],enu_float[1],"r",".")
+    draw_trace(enu_fix[0],enu_fix[1],"g",".",True)
+    draw_trace(enu_float[0],enu_float[1],"#FFB90F",".")
     plt.grid()
     plt.savefig("trace.png",dpi=120)
 
@@ -139,7 +148,8 @@ def draw_main():
         myfile.write("all average[E N U]: " + str(all_average[0])+ " " + str(all_average[1]) + " " + str(all_average[2])+"\n")
 
 if __name__ == "__main__":
-    file_input = "enufile.pos"
+    file_input = "enufile2.pos"
     file_output = "enu_fix.png"
+    ref_pos = [0,0,0]
     draw_main() 
     #count_main()
